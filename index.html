@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGIS Kota Malang</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+
+        #map {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Popup Styling */
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .leaflet-popup-content {
+            margin: 16px;
+            line-height: 1.6;
+            color: #333;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .popup-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #1a202c;
+            border-bottom: 2px solid #edf2f7;
+            padding-bottom: 6px;
+        }
+
+        .popup-item {
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .popup-key {
+            font-weight: 600;
+            color: #4a5568;
+            text-transform: capitalize;
+        }
+
+        /* Shared Control Box Styling */
+        .info-box {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        /* Custom scrollbar for info boxes */
+        .info-box::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .info-box::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .info-box::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 4px;
+        }
+
+        .info-box::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        /* Stat Panel specific styling */
+        .stat-panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            line-height: 24px;
+            color: #2d3748;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .stat-panel h4 {
+            margin: 0 0 10px 0;
+            font-size: 15px;
+            font-weight: 700;
+            color: #1a202c;
+            position: sticky;
+            top: 0;
+            background: inherit;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .stat-item {
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-width: 180px;
+        }
+
+        .stat-item span.count {
+            font-weight: 700;
+            color: #2b6cb0;
+            background: #ebf8ff;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: 10px;
+        }
+
+        /* Legend Card UI Styling (Modern) */
+        .legend-card {
+            background: #ffffff;
+            padding: 18px;
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            line-height: 20px;
+            color: #4a5568;
+            border: 1px solid #edf2f7;
+            min-width: 150px;
+        }
+
+        .legend-card h4 {
+            margin: 0;
+            padding-bottom: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a202c;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 12px;
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            z-index: 2;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            margin-right: 12px;
+            border-radius: 50%;
+            /* Membuatnya bulat sempurna */
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+            /* Shadow halus pada bullet */
+            flex-shrink: 0;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            /* Border tipis untuk kontras */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script>
+        // Inisialisasi Peta, center di Kota Malang (-7.98, 112.63)
+        const map = L.map('map', {
+            zoomControl: false
+        }).setView([-7.98, 112.63], 14);
+
+        // Pindahkan kontrol zoom ke pojok kanan atas
+        L.control.zoom({
+            position: 'topright'
+        }).addTo(map);
+
+        // Basemap OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Fungsi Helper untuk warna acak yang terang
+        function getRandomColor() {
+            const h = Math.floor(Math.random() * 360);
+            const s = 60 + Math.floor(Math.random() * 40);
+            const l = 45 + Math.floor(Math.random() * 15);
+            return `hsl(${h}, ${s}%, ${l}%)`;
+        }
+
+        // Palette warna utama
+        const presetColors = [
+            '#e53e3e', // Red
+            '#3182ce', // Blue
+            '#38a169', // Green
+            '#dd6b20', // Orange
+            '#805ad5', // Purple
+            '#319795', // Teal
+            '#d69e2e', // Yellow
+            '#d53f8c', // Pink
+            '#718096'  // Gray
+        ];
+
+        // Format nama agar rapi (misal fast_food -> Fast Food)
+        function formatName(name) {
+            if (!name) return 'Unknown';
+            if (name.toLowerCase() === 'atm') return 'ATM';
+            return name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        // Kategori yang difilter / diabaikan
+        const excludedAmenities = ['pub', 'bar'];
+
+        // Memuat data GeoJSON
+        fetch('data/data.geojson')
+            .then(response => {
+                if (!response.ok) throw new Error("HTTP error " + response.status);
+                return response.json();
+            })
+            .then(data => {
+                const amenityCounts = {};
+                const amenityColors = {};
+
+                // 1. Filter dan Hitung data
+                if (data.features) {
+                    // Filter: buang semua feature yang memiliki amenity = 'pub' atau 'bar'
+                    data.features = data.features.filter(feature => {
+                        let amenity = feature.properties.amenity ? feature.properties.amenity.toLowerCase().trim() : 'unknown';
+                        return !excludedAmenities.includes(amenity);
+                    });
+
+                    // Hitung jumlah sisa fitur
+                    data.features.forEach(feature => {
+                        let amenity = feature.properties.amenity ? feature.properties.amenity.toLowerCase().trim() : 'unknown';
+                        amenityCounts[amenity] = (amenityCounts[amenity] || 0) + 1;
+                    });
+                }
+
+                // 2. Berikan warna ke setiap amenity tersisa
+                const uniqueAmenities = Object.keys(amenityCounts).sort();
+                uniqueAmenities.forEach((am, index) => {
+                    if (index < presetColors.length) {
+                        amenityColors[am] = presetColors[index];
+                    } else {
+                        amenityColors[am] = getRandomColor();
+                    }
+                });
+
+                // Fungsi mendapatkan warna dari map
+                function getColor(amenity) {
+                    let key = amenity ? amenity.toLowerCase().trim() : 'unknown';
+                    return amenityColors[key] || '#a0aec0';
+                }
+
+                // Style untuk geometri Polygon/Line
+                function styleFeature(feature) {
+                    return {
+                        fillColor: getColor(feature.properties.amenity),
+                        weight: 2,
+                        opacity: 1,
+                        color: 'white',
+                        fillOpacity: 0.8
+                    };
+                }
+
+                // 3. Load layer GeoJSON ke peta
+                L.geoJSON(data, {
+                    pointToLayer: function (feature, latlng) {
+                        return L.circleMarker(latlng, {
+                            radius: 8,
+                            fillColor: getColor(feature.properties.amenity),
+                            color: "#ffffff",
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.9
+                        });
+                    },
+                    style: styleFeature,
+                    onEachFeature: function (feature, layer) {
+                        layer.on({
+                            mouseover: function (e) {
+                                var l = e.target;
+                                l.setStyle({ weight: 4, color: '#f6ad55', fillOpacity: 1 });
+                                if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                                    l.bringToFront();
+                                }
+                            },
+                            mouseout: function (e) {
+                                if (feature.geometry && feature.geometry.type === "Point") {
+                                    l.setStyle({ weight: 2, color: "#ffffff", fillOpacity: 0.9 });
+                                } else {
+                                    l.setStyle(styleFeature(feature));
+                                }
+                            }
+                        });
+
+                        if (feature.properties) {
+                            let title = feature.properties.name || "Lokasi Tanpa Nama";
+                            let popupContent = `<div class="popup-title">${title}</div>`;
+
+                            for (let key in feature.properties) {
+                                if (key !== 'name' && feature.properties[key] !== null && feature.properties[key] !== "") {
+                                    popupContent += `<div class="popup-item">
+                                        <span class="popup-key">${key.replace(/_/g, ' ')}:</span> 
+                                        ${feature.properties[key]}
+                                    </div>`;
+                                }
+                            }
+                            layer.bindPopup(popupContent);
+                        }
+                    }
+                }).addTo(map);
+
+                // 4. Tambahkan Panel Statistik secara dinamis
+                const statPanel = L.control({ position: 'topright' });
+                statPanel.onAdd = function (map) {
+                    const div = L.DomUtil.create('div', 'info-box stat-panel leaflet-control');
+                    let html = '<h4>Statistik Fasilitas</h4>';
+
+                    uniqueAmenities.forEach(am => {
+                        const count = amenityCounts[am];
+                        html += `
+                            <div class="stat-item">
+                                <span>Total ${formatName(am)}</span> 
+                                <span class="count">${count}</span>
+                            </div>
+                        `;
+                    });
+
+                    div.innerHTML = html;
+                    return div;
+                };
+                statPanel.addTo(map);
+
+                // 5. Tambahkan Legend Modern secara dinamis
+                const legend = L.control({ position: 'bottomleft' });
+                legend.onAdd = function (map) {
+                    const div = L.DomUtil.create('div', 'info-box legend-card leaflet-control');
+                    let html = '<h4>Legenda</h4>';
+
+                    uniqueAmenities.forEach(am => {
+                        html += `
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: ${amenityColors[am]}"></div>
+                                <span>${formatName(am)}</span>
+                            </div>
+                        `;
+                    });
+
+                    div.innerHTML = html;
+                    return div;
+                };
+                legend.addTo(map);
+
+            })
+            .catch(error => {
+                console.error('Error saat meload GeoJSON:', error);
+                alert("Gagal memuat data GeoJSON. Pastikan dijalankan melalui Local Web Server.");
+            });
+    </script>
+</body>
+
+</html>
