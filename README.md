@@ -1,6 +1,6 @@
 # WebGIS Kota Malang
 
-WebGIS ini menampilkan persebaran fasilitas umum di Kota Malang yang diambil dari data OpenStreetMap.
+WebGIS ini menampilkan persebaran fasilitas di Kota Malang yang diambil dari data OpenStreetMap.
 
 ## Fitur
 
